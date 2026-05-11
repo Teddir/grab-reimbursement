@@ -11,7 +11,7 @@ Automated Grab receipt extraction and Excel reimbursement form generator using c
 ## Placeholder Requirements
 The engine detects placeholders using the regex `r'value_[a-zA-Z0-9_]+'`. Use these keys in your Excel template:
 
-| Placeholder | Description |
+| Placeholder | Description |- [Microsoft Auth Setup Guide](./MICROSOFT_AUTH_SETUP.md) — Step-by-step instructions for Azure AD integration.
 |---|---|
 | `value_date` | Date of the Grab ride |
 | `value_amount` | Total fare amount |

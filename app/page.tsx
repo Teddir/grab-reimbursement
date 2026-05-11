@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { 
   Upload, 
   FileText, 
@@ -11,18 +11,25 @@ import {
   AlertCircle,
   X,
   Table as TableIcon,
-  Eye
+  Eye,
+  LogOut,
+  User,
+  ShieldCheck,
+  ArrowRight,
+  Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import * as XLSX from "xlsx";
+import { useSession, signIn, signOut } from "next-auth/react";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 export default function Home() {
+  const { data: session, status } = useSession();
   const [template, setTemplate] = useState<File | null>(null);
   const [receipts, setReceipts] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -33,17 +40,28 @@ export default function Home() {
 
   const [extraFields, setExtraFields] = useState({
     value_no_dok: "REIMB/2026/05/001",
-    value_nama_karyawan: "Teddi Rahman",
+    value_nama_karyawan: "",
     value_departemen: "IT",
     value_jabatan: "Senior Developer",
     value_tgl_pengajuan: new Date().toISOString().split('T')[0],
-    value_pemohon: "Teddi Rahman",
+    value_pemohon: "",
     value_hr: "HRD/GA Dept",
     value_logo: " ",
   });
 
   const templateInputRef = useRef<HTMLInputElement>(null);
   const receiptsInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-fill from session
+  useEffect(() => {
+    if (session?.user?.name) {
+      setExtraFields(prev => ({
+        ...prev,
+        value_nama_karyawan: session.user?.name || "",
+        value_pemohon: session.user?.name || "",
+      }));
+    }
+  }, [session]);
 
   const handleExtraFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -117,25 +135,77 @@ export default function Home() {
     }
   };
 
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black">
+        <Loader2 className="animate-spin text-primary" size={48} />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black p-6">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="glass p-12 rounded-[3rem] shadow-2xl max-w-md w-full text-center border border-white/20"
+        >
+          <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-8">
+            <ShieldCheck className="text-primary" size={40} />
+          </div>
+          <h1 className="text-4xl font-bold mb-4 tracking-tight">Enterprise Login</h1>
+          <p className="text-zinc-500 mb-10 leading-relaxed">
+            Please sign in with your corporate Microsoft account to access the reimbursement engine.
+          </p>
+          <button 
+            onClick={() => signIn("microsoft-entra-id")}
+            className="w-full bg-primary text-white py-5 rounded-[2rem] font-bold text-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-3 shadow-xl shadow-primary/20"
+          >
+            <span>Sign in with Microsoft</span>
+            <ArrowRight size={20} />
+          </button>
+          <p className="mt-8 text-xs text-zinc-400 font-medium uppercase tracking-widest opacity-50">
+            Secured by Microsoft Entra ID
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
       {/* Header */}
-      <header className="py-12 md:py-20 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
-            Grab <span className="gradient-text">Reimbursement</span>
-          </h1>
-          <p className="text-zinc-500 dark:text-zinc-400 text-lg max-w-xl mx-auto px-6">
-            Automate your reimbursement process with OCR and custom Excel templates.
-          </p>
-        </motion.div>
+      <header className="pt-12 pb-8 px-6 flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
+            <Sparkles className="text-white" size={24} />
+          </div>
+          <div className="text-left">
+            <h1 className="text-2xl font-bold tracking-tight">
+              Grab <span className="gradient-text">Reimbursement</span>
+            </h1>
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Premium Edition</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 bg-white dark:bg-zinc-900/50 p-2 pl-6 rounded-full border border-zinc-200 dark:border-zinc-800 shadow-sm">
+          <div className="text-right mr-2 hidden sm:block">
+            <p className="text-sm font-bold truncate max-w-[150px]">{session.user?.name}</p>
+            <p className="text-[10px] text-zinc-500 truncate max-w-[150px]">{session.user?.email}</p>
+          </div>
+          <button 
+            onClick={() => signOut()}
+            className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center text-zinc-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+            title="Sign Out"
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
       </header>
 
-      {/* Workflow Steps */}
-      <main className="max-w-5xl mx-auto px-6 pb-32">
+      {/* Main Content */}
+      <main className="max-w-5xl mx-auto px-6 pb-32 pt-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Left Column: Input Steps */}
@@ -145,13 +215,16 @@ export default function Home() {
             <motion.section 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="glass p-8 rounded-[2.5rem] shadow-sm"
+              className="glass p-8 rounded-[2.5rem] shadow-sm relative overflow-hidden"
             >
+              <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+                <User size={120} />
+              </div>
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-bold text-lg">1</div>
                 <div>
-                  <h2 className="text-xl font-bold">Additional Info</h2>
-                  <p className="text-sm text-zinc-500">Fill in header details for the template</p>
+                  <h2 className="text-xl font-bold">Personal Info</h2>
+                  <p className="text-sm text-zinc-500">Auto-filled from your profile</p>
                 </div>
               </div>
 
@@ -176,7 +249,7 @@ export default function Home() {
                       name="value_nama_karyawan"
                       value={extraFields.value_nama_karyawan}
                       onChange={handleExtraFieldChange}
-                      placeholder="Teddi Rahman"
+                      placeholder="Your name"
                       className="bg-zinc-100 dark:bg-zinc-900/50 border border-transparent focus:border-primary/50 focus:bg-white dark:focus:bg-zinc-900 rounded-2xl px-5 py-4 text-sm outline-none transition-all"
                     />
                   </div>
@@ -216,13 +289,13 @@ export default function Home() {
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest ml-1">Requested By (Pemohon)</label>
+                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest ml-1">Pemohon (Signature)</label>
                     <input 
                       type="text" 
                       name="value_pemohon"
                       value={extraFields.value_pemohon}
                       onChange={handleExtraFieldChange}
-                      placeholder="Teddi Rahman"
+                      placeholder="Your name"
                       className="bg-zinc-100 dark:bg-zinc-900/50 border border-transparent focus:border-primary/50 focus:bg-white dark:focus:bg-zinc-900 rounded-2xl px-5 py-4 text-sm outline-none transition-all"
                     />
                   </div>
@@ -241,7 +314,7 @@ export default function Home() {
               </div>
             </motion.section>
 
-            {/* Step 2: Excel Template */}
+            {/* Step 2: Receipts */}
             <motion.section 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -251,53 +324,14 @@ export default function Home() {
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-bold text-lg">2</div>
                 <div>
-                  <h2 className="text-xl font-bold">Excel Template</h2>
-                  <p className="text-sm text-zinc-500">Must contain value_ placeholders</p>
-                </div>
-              </div>
-
-              <div 
-                onClick={() => templateInputRef.current?.click()}
-                className={cn(
-                  "group border-2 border-dashed rounded-3xl p-10 flex flex-col items-center gap-4 cursor-pointer transition-all hover:bg-zinc-50 dark:hover:bg-zinc-900/50",
-                  template ? "border-primary bg-primary/5" : "border-zinc-200 dark:border-zinc-800"
-                )}
-              >
-                <input 
-                  type="file" 
-                  ref={templateInputRef} 
-                  onChange={handleTemplateChange} 
-                  accept=".xlsx" 
-                  className="hidden" 
-                />
-                <div className="w-20 h-20 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm flex items-center justify-center transition-transform group-hover:scale-110">
-                  {template ? <CheckCircle2 className="text-primary" size={40} /> : <CheckCircle2 className="text-primary/50" size={40} />}
-                </div>
-                <div className="text-center">
-                  <p className="font-bold text-sm mb-1">{template ? template.name : "form_template.xlsx"}</p>
-                  <p className="text-xs text-zinc-400">{template ? "Custom template uploaded" : "Default template will be used"}</p>
-                </div>
-              </div>
-            </motion.section>
-
-            {/* Step 3: Receipts */}
-            <motion.section 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="glass p-8 rounded-[2.5rem] shadow-sm"
-            >
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-bold text-lg">3</div>
-                <div>
                   <h2 className="text-xl font-bold">Grab Receipts</h2>
-                  <p className="text-sm text-zinc-500">PDFs or images (multi-ride supported)</p>
+                  <p className="text-sm text-zinc-500">Upload your PDF statements here</p>
                 </div>
               </div>
 
               <div 
                 onClick={() => receiptsInputRef.current?.click()}
-                className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl p-12 flex flex-col items-center gap-5 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-all"
+                className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl p-12 flex flex-col items-center gap-5 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-all group"
               >
                 <input 
                   type="file" 
@@ -307,12 +341,12 @@ export default function Home() {
                   accept=".pdf,image/*" 
                   className="hidden" 
                 />
-                <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-900 rounded-full flex items-center justify-center text-zinc-400">
+                <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-900 rounded-full flex items-center justify-center text-zinc-400 transition-transform group-hover:scale-110">
                   <Upload size={32} />
                 </div>
                 <div className="text-center">
                   <p className="font-bold text-sm mb-1">Click to Upload Receipts</p>
-                  <p className="text-xs text-zinc-400">Selected: {receipts.length} files</p>
+                  <p className="text-xs text-zinc-400">Multi-ride statements supported</p>
                 </div>
               </div>
 
@@ -321,16 +355,16 @@ export default function Home() {
                   <motion.div 
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
-                    className="mt-6 flex flex-col gap-3"
+                    className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3"
                   >
                     {receipts.map((file, i) => (
                       <div key={i} className="flex items-center justify-between p-4 bg-zinc-100 dark:bg-zinc-900/50 rounded-2xl border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 transition-all">
-                        <div className="flex items-center gap-3">
-                          <ImageIcon className="text-primary" size={18} />
-                          <span className="text-sm font-medium truncate max-w-[200px]">{file.name}</span>
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <ImageIcon className="text-primary shrink-0" size={16} />
+                          <span className="text-xs font-bold truncate">{file.name}</span>
                         </div>
                         <button onClick={() => removeReceipt(i)} className="text-zinc-400 hover:text-red-500 transition-colors">
-                          <X size={18} />
+                          <X size={16} />
                         </button>
                       </div>
                     ))}
@@ -338,6 +372,42 @@ export default function Home() {
                 )}
               </AnimatePresence>
             </motion.section>
+
+            {/* Step 3: Template (Optional) */}
+            <details className="group">
+              <summary className="flex items-center justify-between p-4 px-8 glass rounded-[2rem] cursor-pointer list-none hover:bg-zinc-100/50 dark:hover:bg-zinc-900/50 transition-all">
+                <div className="flex items-center gap-3">
+                  <FileText className="text-zinc-400" size={18} />
+                  <span className="text-sm font-bold text-zinc-500 uppercase tracking-widest">Advanced: Custom Template</span>
+                </div>
+                <motion.div 
+                  className="w-8 h-8 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center group-open:rotate-180 transition-transform"
+                >
+                  <ArrowRight size={14} className="rotate-90" />
+                </motion.div>
+              </summary>
+              <div className="p-8 pt-4">
+                <div 
+                  onClick={() => templateInputRef.current?.click()}
+                  className={cn(
+                    "border-2 border-dashed rounded-3xl p-8 flex flex-col items-center gap-4 cursor-pointer transition-all",
+                    template ? "border-primary bg-primary/5" : "border-zinc-200 dark:border-zinc-800"
+                  )}
+                >
+                  <input 
+                    type="file" 
+                    ref={templateInputRef} 
+                    onChange={handleTemplateChange} 
+                    accept=".xlsx" 
+                    className="hidden" 
+                  />
+                  <div className="text-center">
+                    <p className="font-bold text-xs mb-1">{template ? template.name : "Using form_template.xlsx (Default)"}</p>
+                    <p className="text-[10px] text-zinc-400">Upload .xlsx with value_ placeholders if you want to override</p>
+                  </div>
+                </div>
+              </div>
+            </details>
           </div>
 
           {/* Right Column: Processing & Results */}
@@ -466,7 +536,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="text-center py-12 border-t border-zinc-200 dark:border-zinc-900">
         <p className="text-zinc-400 text-xs font-medium uppercase tracking-[0.2em] opacity-50">
-          Grab Template Engine • Premium Edition
+          Grab Template Engine • PT Asia Sistem Indonesia
         </p>
       </footer>
     </div>
