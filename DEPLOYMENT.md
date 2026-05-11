@@ -33,6 +33,7 @@ cp .env.example .env.local
 nano .env.local
 # Fill in: NEXTAUTH_SECRET, AUTH_MICROSOFT_ENTRA_ID_ID, etc.
 # Set NEXTAUTH_URL to your public domain (e.g., https://reimburse.yourcompany.com)
+# Set NEXT_PUBLIC_API_URL to your public API domain (e.g., https://api-reimburse.yourcompany.com)
 ```
 
 Create `.env` for the Backend:

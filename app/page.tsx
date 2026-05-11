@@ -143,7 +143,7 @@ export default function Home() {
     const formData = new FormData();
     receipts.forEach((r) => formData.append("receipts", r));
     try {
-      const res = await fetch("http://localhost:8000/ocr", { method: "POST", body: formData });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/ocr`, { method: "POST", body: formData });
       if (!res.ok) throw new Error("OCR failed.");
       const result = await res.json();
       setPreviewData(result.data);
@@ -170,7 +170,7 @@ export default function Home() {
       const formData = new FormData();
       formData.append("data", JSON.stringify(previewData));
       formData.append("extra_data", JSON.stringify(extraFields));
-      const res = await fetch("http://localhost:8000/generate", { method: "POST", body: formData });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/generate`, { method: "POST", body: formData });
       if (!res.ok) throw new Error("Excel failed.");
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
