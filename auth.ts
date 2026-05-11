@@ -11,8 +11,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   callbacks: {
     async session({ session, token }) {
-      // Pass additional data to the session if needed
       return session
     },
+  },
+  pages: {
+    signIn: "/login",
   },
 })

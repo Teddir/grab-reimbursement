@@ -39,6 +39,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useSession, signIn, signOut } from "next-auth/react";
+import { redirect } from "next/navigation";
 
 /**
  * UTILITIES
@@ -186,21 +187,10 @@ export default function Home() {
     </div>
   );
 
-  if (!session) return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
-      <Card className="p-12 max-w-md w-full text-center shadow-2xl border-none">
-        <div className="w-24 h-24 bg-white rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-xl border border-border overflow-hidden p-4">
-          <img src="/asisgrab-logo.png" alt="AsisGrab Logo" className="w-full h-full object-contain rounded-full" />
-        </div>
-        <h1 className="text-3xl font-black mb-4 tracking-tight">AsisGrab Business</h1>
-        <p className="text-muted-foreground mb-10 leading-relaxed">Sign in to access your enterprise reimbursement dashboard.</p>
-        <Button onClick={() => signIn("microsoft-entra-id")} className="w-full h-16 text-lg">
-          Sign in with Microsoft
-          <ArrowRight size={20} />
-        </Button>
-      </Card>
-    </div>
-  );
+  if (!session) {
+    redirect("/login");
+    return null;
+  }
 
 
   return (
