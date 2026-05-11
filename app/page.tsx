@@ -49,6 +49,7 @@ function cn(...inputs: ClassValue[]) {
 import { Button } from "./components/ui/Button";
 import { Card } from "./components/ui/Card";
 import { Input } from "./components/ui/Input";
+import { TutorialModal } from "./components/ui/TutorialModal";
 
 const nomor = 125;
 const romawiBulan = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
@@ -66,6 +67,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [darkMode, setDarkMode] = useState(false);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
 
   const [extraFields, setExtraFields] = useState({
     value_no_dok: kode,
@@ -323,7 +325,15 @@ export default function Home() {
                   <Upload size={40} />
                 </div>
                 <h2 className="text-3xl font-black mb-4">Upload Receipts</h2>
-                <p className="text-muted-foreground mb-10 max-w-sm mx-auto">Drop your Grab Transport Statements or ride receipts here. We'll handle the rest.</p>
+                <p className="text-muted-foreground mb-6 max-w-sm mx-auto">Drop your Grab Transport Statements or ride receipts here. We'll handle the rest.</p>
+                
+                <button 
+                  onClick={() => setIsTutorialOpen(true)}
+                  className="mb-8 text-xs font-bold text-primary hover:underline flex items-center justify-center gap-1.5 mx-auto"
+                >
+                  <Info size={14} />
+                  How to get PDF Transport Statement?
+                </button>
 
                 <div
                   onClick={() => receiptsInputRef.current?.click()}
@@ -565,6 +575,8 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} />
     </div>
   );
 }
