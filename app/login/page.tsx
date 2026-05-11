@@ -2,11 +2,24 @@
 
 import { signIn } from "next-auth/react";
 import { motion } from "framer-motion";
-import { ArrowRight, ShieldCheck, Sparkles, Globe, Zap, CheckCircle2 } from "lucide-react";
+import { ArrowRight, ShieldCheck, Sparkles, Globe, Zap, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import Link from "next/link";
+import { useState } from "react";
 
 export default function LoginPage() {
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  const handleSignIn = async () => {
+    setIsLoggingIn(true);
+    try {
+      await signIn("microsoft-entra-id", { callbackUrl: "/" });
+    } catch (error) {
+      setIsLoggingIn(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
       {/* LEFT SIDE: BRANDING & VISUALS */}
@@ -87,11 +100,13 @@ export default function LoginPage() {
 
             <div className="space-y-4">
               <Button
-                onClick={() => signIn("microsoft-entra-id", { callbackUrl: "/" })}
+                onClick={handleSignIn}
+                isLoading={isLoggingIn}
+                disabled={isLoggingIn}
                 className="w-full h-14 sm:h-16 text-base sm:text-lg rounded-xl sm:rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
               >
                 Sign in with Microsoft
-                <ArrowRight size={18} className="sm:w-5 sm:h-5" />
+                {!isLoggingIn && <ArrowRight size={18} className="sm:w-5 sm:h-5" />}
               </Button>
 
               <div className="relative py-4 flex items-center">
@@ -101,7 +116,14 @@ export default function LoginPage() {
               </div>
 
               <p className="text-[10px] text-center text-muted-foreground leading-relaxed">
-                By signing in, you agree to our <span className="text-primary font-bold cursor-pointer">Terms of Service</span> and <span className="text-primary font-bold cursor-pointer">Privacy Policy</span>.
+                By signing in, you agree to our{" "}
+                <Link href="/terms" className="text-primary font-bold hover:underline underline-offset-4">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="text-primary font-bold hover:underline underline-offset-4">
+                  Privacy Policy
+                </Link>.
               </p>
             </div>
           </Card>
