@@ -64,17 +64,17 @@ export const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-4xl bg-card rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row h-[85vh] md:h-auto max-h-[90vh]"
+            className="relative w-full max-w-4xl bg-card rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl overflow-y-auto md:overflow-hidden flex flex-col md:flex-row h-[90vh] md:h-auto md:max-h-[90vh]"
           >
             {/* Left Side: Image Container */}
-            <div className="relative w-full md:w-1/2 bg-muted flex items-center justify-center p-8">
+            <div className="relative w-full md:w-1/2 bg-muted flex items-center justify-center p-6 sm:p-8 shrink-0 min-h-[400px] md:min-h-0">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentStep}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="relative w-full aspect-[9/19] max-w-[280px] shadow-2xl rounded-[2rem] overflow-hidden border-8 border-zinc-900 dark:border-zinc-800"
+                  className="relative w-full aspect-[9/19] max-w-[220px] sm:max-w-[280px] shadow-2xl rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden border-4 sm:border-8 border-zinc-900 dark:border-zinc-800"
                 >
                   <img
                     src={steps[currentStep].image}
@@ -91,24 +91,24 @@ export const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
             </div>
 
             {/* Right Side: Content */}
-            <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col">
+            <div className="w-full md:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col min-h-0">
               <button
                 onClick={onClose}
-                className="absolute top-6 right-6 w-10 h-10 rounded-full hover:bg-muted flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground"
+                className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full hover:bg-muted flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground z-10 bg-card/50 backdrop-blur-md sm:bg-transparent"
               >
                 <X size={20} />
               </button>
 
-              <div className="flex-1 flex flex-col justify-center">
-                <div className="mb-8">
-                  <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6">
-                    <span className="text-xl font-black">{currentStep + 1}</span>
+              <div className="flex-1 flex flex-col justify-center py-4">
+                <div className="mb-6 sm:mb-8">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-xl sm:rounded-2xl flex items-center justify-center text-primary mb-4 sm:mb-6">
+                    <span className="text-lg sm:text-xl font-black">{currentStep + 1}</span>
                   </div>
                   <motion.h3
                     key={`title-${currentStep}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-2xl font-black mb-4 tracking-tight"
+                    className="text-xl sm:text-2xl font-black mb-3 sm:mb-4 tracking-tight"
                   >
                     {steps[currentStep].title}
                   </motion.h3>
@@ -116,20 +116,20 @@ export const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
                     key={`desc-${currentStep}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-muted-foreground leading-relaxed"
+                    className="text-sm sm:text-base text-muted-foreground leading-relaxed"
                   >
                     {steps[currentStep].description}
                   </motion.p>
                 </div>
 
                 {/* Progress Dots */}
-                <div className="flex gap-2 mb-10">
+                <div className="flex gap-2 mb-8 sm:mb-10">
                   {steps.map((_, idx) => (
                     <div
                       key={idx}
                       className={cn(
-                        "h-1.5 rounded-full transition-all duration-300",
-                        currentStep === idx ? "w-8 bg-primary" : "w-1.5 bg-muted-foreground/20"
+                        "h-1 sm:h-1.5 rounded-full transition-all duration-300",
+                        currentStep === idx ? "w-6 sm:w-8 bg-primary" : "w-1 sm:w-1.5 bg-muted-foreground/20"
                       )}
                     />
                   ))}
@@ -137,29 +137,30 @@ export const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
               </div>
 
               {/* Navigation Buttons */}
-              <div className="flex gap-4">
+              <div className="flex gap-3 sm:gap-4 mt-auto md:pb-0 pb-12">
                 <Button
                   variant="secondary"
                   disabled={currentStep === 0}
                   onClick={() => setCurrentStep(prev => prev - 1)}
-                  className="flex-1 h-14 rounded-2xl"
+                  className="flex-1 h-12 sm:h-14 rounded-xl sm:rounded-2xl"
                 >
                   <ChevronLeft size={20} />
-                  Back
+                  <span className="hidden sm:inline">Back</span>
                 </Button>
                 {currentStep === steps.length - 1 ? (
                   <Button
                     onClick={onClose}
-                    className="flex-[2] h-14 rounded-2xl"
+                    className="flex-[2] h-12 sm:h-14 rounded-xl sm:rounded-2xl"
                   >
                     Got it!
                   </Button>
                 ) : (
                   <Button
                     onClick={() => setCurrentStep(prev => prev + 1)}
-                    className="flex-[2] h-14 rounded-2xl"
+                    className="flex-[2] h-12 sm:h-14 rounded-xl sm:rounded-2xl"
                   >
-                    Next Step
+                    Next
+                    <span className="hidden sm:inline"> Step</span>
                     <ChevronRight size={20} />
                   </Button>
                 )}

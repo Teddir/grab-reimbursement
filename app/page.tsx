@@ -32,7 +32,8 @@ import {
   User,
   Building2,
   Calendar,
-  Briefcase
+  Briefcase,
+  Menu as MenuIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
@@ -68,6 +69,7 @@ export default function Home() {
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [darkMode, setDarkMode] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [extraFields, setExtraFields] = useState({
     value_no_dok: kode,
@@ -92,7 +94,7 @@ export default function Home() {
 
     const savedFields = localStorage.getItem("grab_reimburse_fields");
     if (savedFields) {
-      try { setExtraFields(JSON.parse(savedFields)); } catch (e) {}
+      try { setExtraFields(JSON.parse(savedFields)); } catch (e) { }
     }
   }, []);
 
@@ -199,26 +201,30 @@ export default function Home() {
     </div>
   );
 
+
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-500">
       {/* MODERN HEADER */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border no-print">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
               <ScanText size={24} className="text-white" />
             </div>
-            <span className="text-xl font-black tracking-tighter">Grab Business</span>
+            <span className="text-lg sm:text-xl font-black tracking-tighter">Grab Business</span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button 
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button
               onClick={() => setDarkMode(!darkMode)}
               className="w-10 h-10 rounded-full hover:bg-muted flex items-center justify-center transition-colors"
             >
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            <div className="h-8 w-[1px] bg-border mx-2 hidden sm:block" />
+
+            <div className="h-8 w-[1px] bg-border mx-1 hidden sm:block" />
+
+            {/* Desktop User Menu */}
             <div className="hidden sm:flex items-center gap-3">
               <div className="text-right">
                 <p className="text-xs font-bold leading-none mb-1">{session.user?.name}</p>
@@ -228,44 +234,88 @@ export default function Home() {
                 <LogOut size={18} />
               </button>
             </div>
+
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="sm:hidden w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-foreground transition-colors"
+            >
+              {isMobileMenuOpen ? <X size={20} /> : <MenuIcon size={20} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="sm:hidden bg-card border-b border-border overflow-hidden"
+            >
+              <div className="p-6 space-y-6">
+                <div className="flex items-center gap-4 p-4 bg-muted rounded-2xl">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                    <User size={24} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black">{session.user?.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{session.user?.email}</p>
+                  </div>
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={() => signOut()}
+                  className="w-full h-14 rounded-2xl justify-start px-6 gap-3 text-red-500 border-red-500/20 hover:bg-red-500/5"
+                >
+                  <LogOut size={20} />
+                  Sign Out
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-12 print:p-0">
         {/* STEPPER */}
-        <div className="flex items-center justify-center mb-16 no-print">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-center mb-8 sm:mb-16 no-print overflow-hidden px-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             {[
-              { id: 0, label: "Configuration", icon: Info },
+              { id: 0, label: "Info", icon: Info },
               { id: 1, label: "Upload", icon: FileUp },
               { id: 2, label: "Review", icon: CheckCircle2 }
             ].map((step, idx) => (
-              <div key={step.id} className="flex items-center">
-                <div className="flex flex-col items-center gap-2">
-                  <button 
+              <div key={step.id} className="flex items-center justify-center">
+                <div className="flex flex-col items-center gap-1.5">
+                  <button
                     onClick={() => activeStep > step.id && setActiveStep(step.id)}
                     disabled={activeStep < step.id}
                     className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
-                      activeStep === step.id 
-                        ? "bg-primary text-white scale-110 shadow-xl shadow-primary/30" 
+                      "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-300",
+                      activeStep === step.id
+                        ? "bg-primary text-white shadow-lg shadow-primary/30"
                         : activeStep > step.id
-                        ? "bg-primary/10 text-primary"
-                        : "bg-muted text-muted-foreground"
+                          ? "bg-primary/10 text-primary"
+                          : "bg-muted text-muted-foreground"
                     )}
                   >
-                    <step.icon size={18} />
+                    <step.icon size={16} className="sm:w-[18px] sm:h-[18px]" />
                   </button>
                   <span className={cn(
-                    "text-[10px] font-bold uppercase tracking-[0.15em]",
+                    "text-[8px] sm:text-[10px] font-bold uppercase tracking-widest",
                     activeStep === step.id ? "text-primary" : "text-muted-foreground"
                   )}>
                     {step.label}
                   </span>
                 </div>
                 {idx < 2 && (
-                  <div className="w-12 h-[2px] bg-border mx-4 -translate-y-4" />
+                  <div className={cn(
+                    "h-[2px] mx-2 sm:mx-4 -translate-y-4 transition-all duration-300",
+                    "w-6 sm:w-12",
+                    activeStep > idx ? "bg-primary" : "bg-border"
+                  )} />
                 )}
               </div>
             ))}
@@ -274,25 +324,25 @@ export default function Home() {
 
         <AnimatePresence mode="wait">
           {activeStep === 0 && (
-            <motion.div 
+            <motion.div
               key="step0"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="max-w-2xl mx-auto"
+              className="max-w-2xl mx-auto w-full"
             >
-              <Card className="p-10">
-                <div className="flex items-center gap-4 mb-10">
-                  <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
-                    <Building2 size={24} />
+              <Card className="p-6 sm:p-10">
+                <div className="flex items-center gap-3 sm:gap-4 mb-8 sm:mb-10">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shrink-0">
+                    <Building2 size={20} className="sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-black">Document Information</h2>
-                    <p className="text-sm text-muted-foreground">Fill in the details for your reimbursement form.</p>
+                    <h2 className="text-lg sm:text-xl font-black">Document Information</h2>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Fill in the details for your reimbursement form.</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <Input label="Document No" name="value_no_dok" value={extraFields.value_no_dok} onChange={handleExtraFieldChange} icon={FileText} />
                   <Input label="Date" name="value_tgl_pengajuan" type="date" value={extraFields.value_tgl_pengajuan} onChange={handleExtraFieldChange} icon={Calendar} />
                   <Input label="Employee" name="value_nama_karyawan" value={extraFields.value_nama_karyawan} onChange={handleExtraFieldChange} icon={User} />
@@ -304,7 +354,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <Button onClick={() => setActiveStep(1)} className="w-full h-14 mt-12 rounded-2xl">
+                <Button onClick={() => setActiveStep(1)} className="w-full h-14 mt-8 sm:mt-12 rounded-2xl">
                   Next Step
                   <ChevronRight size={20} />
                 </Button>
@@ -313,21 +363,21 @@ export default function Home() {
           )}
 
           {activeStep === 1 && (
-            <motion.div 
+            <motion.div
               key="step1"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
-              className="max-w-2xl mx-auto"
+              className="max-w-2xl mx-auto w-full"
             >
-              <Card className="p-12 text-center">
-                <div className="w-20 h-20 bg-primary/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 text-primary">
-                  <Upload size={40} />
+              <Card className="p-6 sm:p-12 text-center">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-primary/10 rounded-[2rem] sm:rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 sm:mb-8 text-primary">
+                  <Upload size={32} className="sm:w-10 sm:h-10" />
                 </div>
-                <h2 className="text-3xl font-black mb-4">Upload Receipts</h2>
-                <p className="text-muted-foreground mb-6 max-w-sm mx-auto">Drop your Grab Transport Statements or ride receipts here. We'll handle the rest.</p>
-                
-                <button 
+                <h2 className="text-2xl sm:text-3xl font-black mb-3 sm:mb-4">Upload Receipts</h2>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-6 max-w-sm mx-auto">Drop your Grab Transport Statements or ride receipts here. We'll handle the rest.</p>
+
+                <button
                   onClick={() => setIsTutorialOpen(true)}
                   className="mb-8 text-xs font-bold text-primary hover:underline flex items-center justify-center gap-1.5 mx-auto"
                 >
@@ -337,25 +387,25 @@ export default function Home() {
 
                 <div
                   onClick={() => receiptsInputRef.current?.click()}
-                  className="h-64 border-2 border-dashed border-border rounded-[2.5rem] flex flex-col items-center justify-center gap-4 hover:bg-muted hover:border-primary/50 transition-all cursor-pointer group mb-10"
+                  className="h-48 sm:h-64 border-2 border-dashed border-border rounded-[2rem] sm:rounded-[2.5rem] flex flex-col items-center justify-center gap-3 sm:gap-4 hover:bg-muted hover:border-primary/50 transition-all cursor-pointer group mb-8 sm:mb-10"
                 >
                   <input type="file" ref={receiptsInputRef} multiple className="hidden" onChange={handleReceiptsChange} accept=".pdf,image/*" />
-                  <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all">
-                    <Plus size={32} />
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-muted rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all">
+                    <Plus size={24} className="sm:w-8 sm:h-8" />
                   </div>
-                  <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Select Files</p>
+                  <p className="text-xs sm:text-sm font-bold text-muted-foreground uppercase tracking-widest">Select Files</p>
                 </div>
 
                 {receipts.length > 0 && (
-                  <div className="text-left space-y-3 mb-10">
-                    <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Selected Files</p>
+                  <div className="text-left space-y-2 sm:space-y-3 mb-8 sm:mb-10">
+                    <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Selected Files</p>
                     {receipts.map((r, i) => (
-                      <div key={i} className="flex items-center justify-between p-4 bg-muted rounded-2xl group">
-                        <div className="flex items-center gap-3">
-                          <File size={18} className="text-primary" />
-                          <p className="text-sm font-bold truncate max-w-[200px]">{r.name}</p>
+                      <div key={i} className="flex items-center justify-between p-3 sm:p-4 bg-muted rounded-xl sm:rounded-2xl group">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <File size={16} className="text-primary shrink-0" />
+                          <p className="text-xs sm:text-sm font-bold truncate">{r.name}</p>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); setReceipts(prev => prev.filter((_, idx) => idx !== i)); }} className="text-muted-foreground hover:text-red-500">
+                        <button onClick={(e) => { e.stopPropagation(); setReceipts(prev => prev.filter((_, idx) => idx !== i)); }} className="text-muted-foreground hover:text-red-500 shrink-0 ml-2">
                           <X size={18} />
                         </button>
                       </div>
@@ -363,9 +413,9 @@ export default function Home() {
                   </div>
                 )}
 
-                <div className="flex gap-4">
-                  <Button variant="secondary" onClick={() => setActiveStep(0)} className="flex-1 h-14 rounded-2xl">Back</Button>
-                  <Button onClick={handleStartOCR} isLoading={isProcessing} className="flex-[2] h-14 rounded-2xl">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                  <Button variant="secondary" onClick={() => setActiveStep(0)} className="order-2 sm:order-1 h-14 rounded-2xl">Back</Button>
+                  <Button onClick={handleStartOCR} isLoading={isProcessing} className="order-1 sm:order-2 flex-grow h-14 rounded-2xl">
                     Extract Data
                     <ScanText size={20} />
                   </Button>
@@ -375,93 +425,93 @@ export default function Home() {
           )}
 
           {activeStep === 2 && (
-            <motion.div 
+            <motion.div
               key="step2"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="max-w-6xl mx-auto no-print"
+              className="max-w-6xl mx-auto no-print w-full"
             >
               <Card>
-                <div className="p-8 border-b border-border flex items-center justify-between bg-muted/30">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-primary text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
-                      <TableIcon size={24} />
+                <div className="p-5 sm:p-8 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between bg-muted/30 gap-4 sm:gap-0">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary text-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
+                      <TableIcon size={20} className="sm:w-6 sm:h-6" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-black">Review & Validate</h2>
-                      <p className="text-sm text-muted-foreground">Adjust any details before generating the Excel report.</p>
+                      <h2 className="text-lg sm:text-xl font-black">Review & Validate</h2>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Adjust details before generating report.</p>
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    <Button variant="secondary" onClick={() => window.print()} className="w-12 p-0"><Printer size={20} /></Button>
-                    <Button variant="secondary" onClick={() => setActiveStep(1)} className="w-12 p-0"><RotateCcw size={20} /></Button>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button variant="secondary" onClick={() => window.print()} className="flex-1 sm:w-12 sm:p-0"><Printer size={18} /></Button>
+                    <Button variant="secondary" onClick={() => setActiveStep(1)} className="flex-1 sm:w-12 sm:p-0"><RotateCcw size={18} /></Button>
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                <div className="overflow-x-auto scrollbar-hide">
+                  <table className="w-full text-left border-collapse min-w-[800px]">
                     <thead className="bg-muted/50 border-b border-border">
                       <tr>
                         {["No", "Order ID", "Date", "Pickup", "Drop-Off", "Amount", "Time", "Purpose"].map((h) => (
-                          <th key={h} className="px-6 py-4 text-[11px] font-black text-muted-foreground uppercase tracking-widest">{h}</th>
+                          <th key={h} className="px-4 sm:px-6 py-4 text-[10px] sm:text-[11px] font-black text-muted-foreground uppercase tracking-widest">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
                       {previewData.map((row, i) => (
                         <tr key={i} className="hover:bg-primary/5 transition-colors group">
-                          <td className="px-6 py-5 text-sm font-bold text-muted-foreground/30">{i + 1}</td>
-                          <td className="px-6 py-5">
-                            <input 
-                              value={row.value_nomor_order_grab || ""} 
-                              onChange={(e) => handleUpdatePreviewItem(i, "value_nomor_order_grab", e.target.value)} 
-                              className="bg-transparent border-none p-0 text-sm font-bold w-32 focus:ring-0"
+                          <td className="px-4 sm:px-6 py-4 sm:py-5 text-xs sm:text-sm font-bold text-muted-foreground/30">{i + 1}</td>
+                          <td className="px-4 sm:px-6 py-4 sm:py-5">
+                            <input
+                              value={row.value_nomor_order_grab || ""}
+                              onChange={(e) => handleUpdatePreviewItem(i, "value_nomor_order_grab", e.target.value)}
+                              className="bg-transparent border-none p-0 text-xs sm:text-sm font-bold w-24 sm:w-32 focus:ring-0"
                             />
                           </td>
-                          <td className="px-6 py-5">
-                            <input 
-                              value={row.value_tanggal_perjalanan || ""} 
-                              onChange={(e) => handleUpdatePreviewItem(i, "value_tanggal_perjalanan", e.target.value)} 
-                              className="bg-transparent border-none p-0 text-sm w-24 focus:ring-0"
+                          <td className="px-4 sm:px-6 py-4 sm:py-5">
+                            <input
+                              value={row.value_tanggal_perjalanan || ""}
+                              onChange={(e) => handleUpdatePreviewItem(i, "value_tanggal_perjalanan", e.target.value)}
+                              className="bg-transparent border-none p-0 text-xs sm:text-sm w-20 sm:w-24 focus:ring-0"
                             />
                           </td>
-                          <td className="px-6 py-5">
-                            <input 
-                              value={row.value_pickup || ""} 
-                              onChange={(e) => handleUpdatePreviewItem(i, "value_pickup", e.target.value)} 
-                              className="bg-transparent border-none p-0 text-[11px] w-48 truncate focus:ring-0"
+                          <td className="px-4 sm:px-6 py-4 sm:py-5">
+                            <input
+                              value={row.value_pickup || ""}
+                              onChange={(e) => handleUpdatePreviewItem(i, "value_pickup", e.target.value)}
+                              className="bg-transparent border-none p-0 text-[10px] sm:text-[11px] w-32 sm:w-48 truncate focus:ring-0"
                             />
                           </td>
-                          <td className="px-6 py-5">
-                            <input 
-                              value={row.value_dropoff || ""} 
-                              onChange={(e) => handleUpdatePreviewItem(i, "value_dropoff", e.target.value)} 
-                              className="bg-transparent border-none p-0 text-[11px] w-48 truncate focus:ring-0"
+                          <td className="px-4 sm:px-6 py-4 sm:py-5">
+                            <input
+                              value={row.value_dropoff || ""}
+                              onChange={(e) => handleUpdatePreviewItem(i, "value_dropoff", e.target.value)}
+                              className="bg-transparent border-none p-0 text-[10px] sm:text-[11px] w-32 sm:w-48 truncate focus:ring-0"
                             />
                           </td>
-                          <td className="px-6 py-5">
+                          <td className="px-4 sm:px-6 py-4 sm:py-5">
                             <div className="flex items-center gap-1 text-primary">
-                              <span className="text-[11px] font-bold">Rp</span>
-                              <input 
-                                value={row.value_total_biaya || ""} 
-                                onChange={(e) => handleUpdatePreviewItem(i, "value_total_biaya", e.target.value)} 
-                                className="bg-transparent border-none p-0 text-sm font-black w-24 focus:ring-0"
+                              <span className="text-[10px] sm:text-[11px] font-bold">Rp</span>
+                              <input
+                                value={row.value_total_biaya || ""}
+                                onChange={(e) => handleUpdatePreviewItem(i, "value_total_biaya", e.target.value)}
+                                className="bg-transparent border-none p-0 text-xs sm:text-sm font-black w-20 sm:w-24 focus:ring-0"
                               />
                             </div>
                           </td>
-                          <td className="px-6 py-5">
-                            <input 
-                              value={row.value_waktu_berangkat || ""} 
-                              onChange={(e) => handleUpdatePreviewItem(i, "value_waktu_berangkat", e.target.value)} 
-                              className="bg-transparent border-none p-0 text-[11px] w-16 focus:ring-0"
+                          <td className="px-4 sm:px-6 py-4 sm:py-5">
+                            <input
+                              value={row.value_waktu_berangkat || ""}
+                              onChange={(e) => handleUpdatePreviewItem(i, "value_waktu_berangkat", e.target.value)}
+                              className="bg-transparent border-none p-0 text-[10px] sm:text-[11px] w-12 sm:w-16 focus:ring-0"
                             />
                           </td>
-                          <td className="px-6 py-5">
-                            <input 
+                          <td className="px-4 sm:px-6 py-4 sm:py-5">
+                            <input
                               placeholder="Add purpose..."
-                              value={row.value_tujuan_perjalan || ""} 
-                              onChange={(e) => handleUpdatePreviewItem(i, "value_tujuan_perjalan", e.target.value)} 
-                              className="bg-transparent border-none p-0 text-[11px] italic text-muted-foreground w-32 focus:ring-0"
+                              value={row.value_tujuan_perjalan || ""}
+                              onChange={(e) => handleUpdatePreviewItem(i, "value_tujuan_perjalan", e.target.value)}
+                              className="bg-transparent border-none p-0 text-[10px] sm:text-[11px] italic text-muted-foreground w-24 sm:w-32 focus:ring-0"
                             />
                           </td>
                         </tr>
@@ -470,14 +520,14 @@ export default function Home() {
                   </table>
                 </div>
 
-                <div className="p-8 bg-muted/30 border-t border-border flex items-center justify-between">
+                <div className="p-5 sm:p-8 bg-muted/30 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-0">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-card rounded-xl flex items-center justify-center border border-border">
+                    <div className="w-10 h-10 bg-card rounded-xl flex items-center justify-center border border-border shrink-0">
                       <Layout size={18} />
                     </div>
                     <p className="text-sm font-bold">Ready to process <span className="text-primary">{previewData.length}</span> rides</p>
                   </div>
-                  <Button onClick={handleGenerateExcel} isLoading={isGenerating} className="px-10 h-14 rounded-2xl text-lg">
+                  <Button onClick={handleGenerateExcel} isLoading={isGenerating} className="w-full sm:w-auto px-10 h-14 rounded-2xl text-lg">
                     Download Report
                     <Download size={20} />
                   </Button>
