@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+openpyxl
+pydantic
+python-multipart
+easyocr
+pillow
+python-dotenv
+aiofiles
+pymupdf
