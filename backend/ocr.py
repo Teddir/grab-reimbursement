@@ -38,13 +38,16 @@ class GrabReceiptOCR:
         
         # Single receipt logic
         data = {
-            "date": self._extract_date(full_text),
-            "amount": self._extract_amount(full_text),
-            "booking_id": self._extract_booking_id(full_text),
-            "description": self._extract_description(full_text),
-            "pickup": self._extract_pickup(full_text),
-            "dropoff": self._extract_dropoff(full_text),
-            "time": self._extract_time(full_text),
+            "value_tanggal_perjalanan": self._extract_date(full_text),
+            "value_total_biaya": self._extract_amount(full_text),
+            "value_total_fare": self._extract_amount(full_text),
+            "value_nomor_order_grab": self._extract_booking_id(full_text),
+            "value_service_type": self._extract_description(full_text),
+            "value_pickup": self._extract_pickup(full_text),
+            "value_dropoff": self._extract_dropoff(full_text),
+            "value_waktu_berangkat": self._extract_time(full_text),
+            "value_nama_karyawan_per_row": "", # Will be filled by header info or user
+            "value_tujuan_perjalan": "-",
             "raw_text": full_text,
             "image_bytes": image_bytes
         }
@@ -97,8 +100,8 @@ class GrabReceiptOCR:
             ride = {
                 "value_tanggal_perjalanan": date_str,
                 "value_nomor_order_grab": match.group(3),
-                "employee_name": match.group(4).strip(),
-                "service_type": match.group(5),
+                "value_nama_karyawan_per_row": match.group(4).strip(),
+                "value_service_type": match.group(5),
                 "payment_method": match.group(6).strip(),
                 "value_total_fare": match.group(8).replace('.', ''),
                 "value_total_biaya": match.group(8).replace('.', ''),

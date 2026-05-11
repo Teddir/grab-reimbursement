@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -23,70 +23,116 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"DEBUG: Incoming {request.method} request to {request.url}")
+    response = await call_next(request)
+    print(f"DEBUG: Response status: {response.status_code}")
+    return response
+
 ocr_engine = GrabReceiptOCR()
 
-@app.post("/process")
-async def process_reimbursement(
+import base64
+
+# In-memory storage for receipt images to avoid large payloads in JSON
+receipt_storage = {}
+
+@app.post("/ocr")
+async def extract_receipt_data(
     receipts: List[UploadFile] = File(...),
-    template: Optional[UploadFile] = File(None),
-    extra_data: str = Form("{}")
 ):
+    """
+    Extracts data from receipts and returns JSON for frontend review.
+    """
+    extracted_data_list = []
+    for receipt in receipts:
+        contents = await receipt.read()
+        rides_data = ocr_engine.extract_data(contents, filename=receipt.filename)
+        
+        # Store the original image/PDF for this receipt session
+        receipt_id = str(uuid.uuid4())
+        
+        for data in rides_data:
+            # Preserve all data from OCR engine
+            normalized_data = data.copy()
+            
+            # Ensure mandatory keys exist if OCR missed them
+            if "value_tujuan_perjalan" not in normalized_data:
+                normalized_data["value_tujuan_perjalan"] = ""
+            if "value_total_fare" not in normalized_data and "value_total_biaya" in normalized_data:
+                normalized_data["value_total_fare"] = normalized_data["value_total_biaya"]
+            if "value_dropoff" not in normalized_data and "value_destination" in normalized_data:
+                normalized_data["value_dropoff"] = normalized_data["value_destination"]
+
+            # Get the image bytes for this ride (from OCR engine)
+            img_bytes = data.get("image_bytes")
+            if img_bytes:
+                # Store it and replace with an ID
+                storage_key = f"{receipt_id}_{uuid.uuid4()}"
+                receipt_storage[storage_key] = img_bytes
+                normalized_data["image_storage_id"] = storage_key
+                # Remove the actual bytes to keep JSON small
+                if "image_bytes" in normalized_data:
+                    del normalized_data["image_bytes"]
+                
+            extracted_data_list.append(normalized_data)
+    
+    return {"data": extracted_data_list}
+
+from fastapi import Request
+
+@app.post("/generate")
+async def generate_excel(request: Request):
+    """
+    Generates Excel from reviewed/edited JSON data.
+    """
+    form_data = await request.form()
+    data = form_data.get("data")
+    extra_data = form_data.get("extra_data")
+    template = form_data.get("template")
+    
+    print(f"DEBUG: Form keys received: {list(form_data.keys())}")
+    
     temp_dir = f"temp/{uuid.uuid4()}"
     os.makedirs(temp_dir, exist_ok=True)
     
-    # Custom fields from frontend
-    try:
-        custom_fields = json.loads(extra_data)
-    except:
-        custom_fields = {}
+    if not data:
+        return {"error": "Missing required 'data' field"}
     
-    # Save or use default template
+    try:
+        data_list = json.loads(data)
+        custom_fields = json.loads(extra_data) if extra_data else {}
+        
+        # Retrieve image bytes from storage using IDs
+        for item in data_list:
+            storage_id = item.get("image_storage_id")
+            if storage_id and storage_id in receipt_storage:
+                img_bytes = receipt_storage[storage_id]
+                item["image_bytes"] = img_bytes
+                item["value_image_receipt"] = img_bytes
+    except Exception as e:
+        print(f"DEBUG: JSON parse error: {e}")
+        return {"error": f"Invalid JSON data: {str(e)}"}
+
+    # Add back custom fields and index
+    for i, item in enumerate(data_list):
+        item["value_no"] = i + 1
+        item.update(custom_fields)
+
     template_path = os.path.join(temp_dir, "template.xlsx")
-    if template:
+    if template and hasattr(template, 'file'):
         with open(template_path, "wb") as f:
             shutil.copyfileobj(template.file, f)
     else:
-        # Use default template from root (parent directory)
         default_template = "../form_template.xlsx"
         if os.path.exists(default_template):
             shutil.copy(default_template, template_path)
         else:
-            return {"error": f"No template provided and default template not found at {os.path.abspath(default_template)}"}
+            return {"error": "Default template not found"}
     
-    # Process each receipt
-    extracted_data_list = []
-    global_counter = 1
-    for receipt in receipts:
-        contents = await receipt.read()
-        # OCR engine now returns a LIST of one or more rides
-        rides_data = ocr_engine.extract_data(contents, filename=receipt.filename)
-        
-        for idx, data in enumerate(rides_data):
-            print(f"--- Mapping Ride {idx + 1} ---")
-            # Map OCR data to placeholders (Matching refined OCR output)
-            placeholder_data = {
-                "value_no": global_counter,
-                "value_image_receipt": data.get("image_bytes")
-            }
-            # Merge all fields from OCR directly
-            placeholder_data.update(data)
-            
-            # Merge custom fields from frontend
-            placeholder_data.update(custom_fields)
-            
-            # Log the mapped data for debugging (Clean up bytes for JSON)
-            debug_info = {k: (v if not isinstance(v, bytes) else "<bytes>") for k, v in placeholder_data.items()}
-            print(f"Mapped Ride {idx + 1}: {json.dumps(debug_info, indent=2)}")
-            
-            extracted_data_list.append(placeholder_data)
-            global_counter += 1
-    
-    # Initialize engine
     output_path = os.path.join(temp_dir, "output.xlsx")
     engine = ExcelTemplateEngine(template_path)
-    
-    # Fill template
-    engine.fill_template(extracted_data_list, output_path)
+    engine.fill_template(data_list, output_path)
     
     return FileResponse(
         output_path, 

@@ -81,6 +81,9 @@ class ExcelTemplateEngine:
         ws = self.wb.active
         print(f"Filling template on sheet: {ws.title}")
         
+        # Collect images for the separate sheet
+        receipt_images = []
+        
         # 1. Detect which row contains the placeholders for the repeatable data
         all_placeholders = self.find_placeholders(ws)
         if not all_placeholders:
@@ -92,7 +95,7 @@ class ExcelTemplateEngine:
         repeat_row_idx = None
         repeatable_markers = ['value_no', 'value_nomor_order_grab', 'value_tanggal_perjalanan']
         for p in all_placeholders:
-            if p['name'] in repeatable_markers: # Exact match to avoid partial matches like value_no_dok
+            if p['name'] in repeatable_markers: 
                 repeat_row_idx = p['row']
                 break
         
@@ -103,19 +106,12 @@ class ExcelTemplateEngine:
         # 2. Duplicate the row if we have multiple items
         if repeat_row_idx and len(data_list) > 1:
             num_new_rows = len(data_list) - 1
-            print(f"Duplicating row {repeat_row_idx} into {num_new_rows} new rows")
-            
-            # Identify merged cells in the template row before inserting
             template_merges = []
             for m_range in list(ws.merged_cells.ranges):
                 if m_range.min_row <= repeat_row_idx <= m_range.max_row:
                     template_merges.append(m_range)
             
-            # Insert rows - this shifts everything below
             ws.insert_rows(repeat_row_idx + 1, amount=num_new_rows)
-            
-            # Capture the template row values and styles
-            # We must iterate over all columns to ensure borders are captured for empty cells too
             max_col = ws.max_column
             source_cells = [ws.cell(row=repeat_row_idx, column=c) for c in range(1, max_col + 1)]
 
@@ -123,8 +119,6 @@ class ExcelTemplateEngine:
                 target_row_idx = repeat_row_idx + i
                 ws.row_dimensions[target_row_idx].height = ws.row_dimensions[repeat_row_idx].height
                 
-                # Surgical cleanup: only remove merges that were created/shifted into this specific new row
-                # but belong to the item table structure
                 for m_range in list(ws.merged_cells.ranges):
                     if m_range.min_row == target_row_idx and m_range.max_row == target_row_idx:
                         try:
@@ -132,7 +126,6 @@ class ExcelTemplateEngine:
                         except:
                             pass
 
-                # Deep copy values and styles for every cell in the row
                 for col_idx, source_cell in enumerate(source_cells, 1):
                     target_cell = ws.cell(row=target_row_idx, column=col_idx)
                     target_cell.value = source_cell.value
@@ -143,7 +136,6 @@ class ExcelTemplateEngine:
                         target_cell.number_format = copy.copy(source_cell.number_format)
                         target_cell.alignment = copy.copy(source_cell.alignment)
 
-                # Re-apply merged cells for the new row exactly as they are in the template
                 for m_range in template_merges:
                     ws.merge_cells(
                         start_row=target_row_idx,
@@ -155,9 +147,6 @@ class ExcelTemplateEngine:
         # 3. Substitute values in the table rows
         for i, data in enumerate(data_list):
             current_row_idx = repeat_row_idx + i if repeat_row_idx else i + 1
-            print(f"--- Filling Excel Row {current_row_idx} ---")
-            
-            # Use iter_rows for stability
             row_cells = list(ws.iter_rows(min_row=current_row_idx, max_row=current_row_idx, min_col=1, max_col=ws.max_column))[0]
             for cell in row_cells:
                 if cell.value and isinstance(cell.value, str):
@@ -169,24 +158,22 @@ class ExcelTemplateEngine:
                         if key in new_value:
                             val = data[key]
                             if key == 'value_image_receipt' and val:
-                                self.insert_image(ws, val, cell.coordinate)
-                                new_value = new_value.replace(key, "") 
-                                print(f"  Inserted image at {cell.coordinate}")
+                                # Collect for new sheet instead of inserting here
+                                if val not in receipt_images:
+                                    receipt_images.append(val)
+                                new_value = new_value.replace(key, "Lihat Lampiran") 
                             else:
                                 new_value = new_value.replace(key, str(val))
-                                print(f"  Replaced {key} with '{val}' at {cell.coordinate}")
                     
                     if new_value != original_val:
                         cell.value = new_value
 
-        # 4. Global Pass: Fill any remaining placeholders (header/footer)
+        # 4. Global Pass: Header/Footer
         global_data = {}
         if data_list:
-            # Merge all unique keys from all data items
             for d in reversed(data_list):
                 global_data.update(d)
         
-        # Calculate total
         try:
             def clean_float(val):
                 if not val: return 0.0
@@ -200,15 +187,11 @@ class ExcelTemplateEngine:
         except Exception as e:
             print(f"Total calculation error: {e}")
         
-        # Re-scan the entire worksheet for remaining placeholders
-        # We also re-apply signature/footer merges that might have been shifted or corrupted
         for row in ws.iter_rows():
             for cell in row:
                 if cell.value and isinstance(cell.value, str):
                     new_value = str(cell.value)
                     replaced = False
-                    
-                    # Search for placeholders
                     matches = self.placeholder_pattern.findall(new_value)
                     if matches:
                         sorted_matches = sorted(matches, key=len, reverse=True)
@@ -216,64 +199,60 @@ class ExcelTemplateEngine:
                             if match in global_data:
                                 val = global_data[match]
                                 if match == 'value_image_receipt' and val:
-                                    self.insert_image(ws, val, cell.coordinate)
-                                    new_value = new_value.replace(match, "")
+                                    if val not in receipt_images:
+                                        receipt_images.append(val)
+                                    new_value = new_value.replace(match, "Lihat Lampiran")
                                 else:
                                     new_value = new_value.replace(match, str(val))
                                 replaced = True
-                        
                         if replaced:
                             cell.value = new_value
         
-        # 5. Final Footer Correction: Force apply user-specified signature/total merges
-        # This ensures the footer layout is exactly as requested even after row shifts
+        # 5. Final Footer Correction
         last_data_row = repeat_row_idx + len(data_list)
         for row_idx in range(last_data_row, ws.max_row + 1):
             for cell in ws[row_idx]:
                 if not cell.value: continue
                 val = str(cell.value)
-                
-                # Total Biaya (Label and Value)
                 if "Total Biaya" in val or "Rp" in val:
-                    # Search nearby for labels or values to identify the row
-                    # Apply: Total Biaya (B-C), Value (D-H)
                     try:
                         ws.merge_cells(start_row=row_idx, start_column=2, end_row=row_idx, end_column=3)
                         ws.merge_cells(start_row=row_idx, start_column=4, end_row=row_idx, end_column=8)
                     except: pass
-                
-                # Pemohon / Signature block 1
                 if "Pemohon" in val or any(x in val for x in [global_data.get("value_nama_karyawan", ""), global_data.get("value_pemohon", "")] if x):
-                    # Apply: B-F merge
                     try:
                         ws.merge_cells(start_row=row_idx, start_column=2, end_row=row_idx, end_column=6)
                     except: pass
-                
-                # HR/GA / Signature block 2
                 if "HR/GA" in val or global_data.get("value_hr", "") in val:
-                    # Apply: J-L merge
                     try:
                         ws.merge_cells(start_row=row_idx, start_column=10, end_row=row_idx, end_column=12)
                     except: pass
 
+        # 6. Create Attachment Sheet
+        if receipt_images:
+            ws_attach = self.wb.create_sheet("Lampiran Bukti")
+            ws_attach.column_dimensions['B'].width = 80 # Make it wide
+            
+            current_row = 2
+            for i, img_bytes in enumerate(receipt_images):
+                ws_attach.cell(row=current_row, column=2).value = f"Bukti Reimbursement #{i+1}"
+                ws_attach.cell(row=current_row, column=2).font = copy.copy(ws.cell(row=1, column=1).font) # Try to get some bold font
+                
+                img_coord = f"B{current_row + 1}"
+                self.insert_image(ws_attach, img_bytes, img_coord, scale_height=600)
+                current_row += 35 # Space out images (each roughly 600px height)
+
         self.wb.save(output_path)
         print(f"Successfully saved filled report to: {output_path}")
 
-    def insert_image(self, ws, img_data, coordinate):
+    def insert_image(self, ws, img_data, coordinate, scale_height=120):
         """
-        Inserts an image into the specified cell, attempting to fit it within the cell boundaries.
+        Inserts an image into the specified cell with custom height.
         """
         img = OpenpyxlImage(BytesIO(img_data))
-        
-        # Scale image to a reasonable size while maintaining aspect ratio
-        # Standard Excel cell is roughly 64x20 pixels at 100% zoom
-        # We'll aim for about 120px height and proportional width
-        max_height = 120
-        scale = max_height / img.height
+        scale = scale_height / img.height
         img.width = int(img.width * scale)
-        img.height = max_height
-        
-        # Anchor the image to the top-left of the cell
+        img.height = scale_height
         img.anchor = coordinate
         ws.add_image(img)
 

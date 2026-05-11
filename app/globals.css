@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #f8fafc;
@@ -17,9 +18,16 @@
   --color-secondary: var(--secondary);
 }
 
+.dark {
+  --background: #000000;
+  --foreground: #f8fafc;
+  --card: rgba(15, 23, 42, 0.6);
+  --border: rgba(255, 255, 255, 0.1);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020617;
+  :root:not(.light) {
+    --background: #000000;
     --foreground: #f8fafc;
     --card: rgba(15, 23, 42, 0.6);
     --border: rgba(255, 255, 255, 0.1);
@@ -47,4 +55,24 @@ body {
   background: linear-gradient(135deg, #00b14f, #007a36);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  @page {
+    margin: 1cm;
+  }
+}
+
+.print-only {
+  display: none;
 }
