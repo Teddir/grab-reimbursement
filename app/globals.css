@@ -2,44 +2,59 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --primary: #00b14f; /* Grab Green */
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #000000;
+  --primary: #00b14f;
+  --primary-hover: #009e46;
   --secondary: #000000;
   --accent: #facc15;
-  --card: rgba(255, 255, 255, 0.7);
-  --border: rgba(0, 0, 0, 0.1);
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --card: #ffffff;
+  --border: #e5e7eb;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #000000;
+  --foreground: #ffffff;
+  --primary: #00b14f;
+  --primary-hover: #00c85a;
+  --secondary: #ffffff;
+  --accent: #facc15;
+  --muted: #0a0a0a;
+  --muted-foreground: #9ca3af;
+  --card: #0a0a0a;
+  --border: #1f2937;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-border: var(--border);
 }
 
-.dark {
-  --background: #000000;
-  --foreground: #f8fafc;
-  --card: rgba(15, 23, 42, 0.6);
-  --border: rgba(255, 255, 255, 0.1);
+* {
+  border-color: var(--border);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --background: #000000;
-    --foreground: #f8fafc;
-    --card: rgba(15, 23, 42, 0.6);
-    --border: rgba(255, 255, 255, 0.1);
-  }
+html, body {
+  background-color: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
   font-family: 'Inter', sans-serif;
-  background-image: radial-gradient(circle at top right, rgba(0, 177, 79, 0.05), transparent 400px),
-                    radial-gradient(circle at bottom left, rgba(0, 177, 79, 0.05), transparent 400px);
+  background-image: radial-gradient(circle at top right, rgba(0, 177, 79, 0.03), transparent 600px),
+                    radial-gradient(circle at bottom left, rgba(0, 177, 79, 0.03), transparent 600px);
   min-height: 100vh;
 }
 
@@ -48,31 +63,12 @@ body {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
-}
-
-.gradient-text {
-  background: linear-gradient(135deg, #00b14f, #007a36);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 @media print {
-  .no-print {
-    display: none !important;
-  }
-  body {
-    background: white !important;
-    color: black !important;
-  }
-  .print-only {
-    display: block !important;
-  }
-  @page {
-    margin: 1cm;
-  }
+  .no-print { display: none !important; }
+  body { background: white !important; color: black !important; }
+  .print-only { display: block !important; }
 }
 
-.print-only {
-  display: none;
-}
+.print-only { display: none; }
