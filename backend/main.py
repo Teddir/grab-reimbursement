@@ -10,13 +10,12 @@ import json
 import asyncio
 import time
 from datetime import datetime, timedelta
+from contextlib import asynccontextmanager
 from ocr import GrabReceiptOCR
 from engine import ExcelTemplateEngine
 
 # Fix for macOS SSL certificate verification error
 ssl._create_default_https_context = ssl._create_unverified_context
-
-app = FastAPI()
 
 # --- BACKGROUND CLEANUP TASK ---
 async def cleanup_temp_files():
@@ -33,7 +32,6 @@ async def cleanup_temp_files():
                 
                 for item in os.listdir(temp_root):
                     item_path = os.path.join(temp_root, item)
-                    # Check if the folder/file is older than 7 days
                     if os.path.getmtime(item_path) < now - retention_period:
                         try:
                             if os.path.isdir(item_path):
@@ -44,8 +42,7 @@ async def cleanup_temp_files():
                         except Exception as e:
                             print(f"DEBUG: Failed to delete {item}: {e}")
             
-            # Clear in-memory storage too if it gets too large (simple flush)
-            # This is a basic safety measure
+            # Clear in-memory storage too if it gets too large
             if len(receipt_storage) > 1000:
                 print("DEBUG: Clearing old in-memory receipt storage...")
                 receipt_storage.clear()
@@ -53,13 +50,19 @@ async def cleanup_temp_files():
         except Exception as e:
             print(f"DEBUG: Cleanup task error: {e}")
             
-        # Wait 24 hours before the next run
         await asyncio.sleep(24 * 60 * 60)
 
-@app.on_event("startup")
-async def startup_event():
-    # Start the cleanup task in the background
-    asyncio.create_task(cleanup_temp_files())
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # STARTUP: Start the cleanup task
+    cleanup_task = asyncio.create_task(cleanup_temp_files())
+    print("DEBUG: Background cleanup task started.")
+    yield
+    # SHUTDOWN: Cancel the task if needed
+    cleanup_task.cancel()
+    print("DEBUG: Background cleanup task stopped.")
+
+app = FastAPI(lifespan=lifespan)
 
 # --- MIDDLEWARE & ENGINES ---
 
