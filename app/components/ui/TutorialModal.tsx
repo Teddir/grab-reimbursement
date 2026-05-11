@@ -19,28 +19,28 @@ const steps = [
     image: "/step-by-step-export-transport/export-pdf-transport-step-1.jpeg"
   },
   {
-    title: "Pilih Profil Bisnis",
-    description: "Klik pada tab 'Business' atau pastikan kamu melihat riwayat perjalanan bisnis.",
+    title: "Klik 'Lihat Pengeluaran'",
+    description: "Klik pada teks berwarna biru 'Lihat Pengeluaran' untuk melihat riwayat perjalanan bisnis.",
     image: "/step-by-step-export-transport/export-pdf-transport-step-2.jpeg"
   },
   {
-    title: "Klik Ikon Ekspor",
-    description: "Cari dan klik ikon ekspor/download yang biasanya ada di pojok kanan atas.",
+    title: "Klik Transaksi Terbaru",
+    description: "Cari dan klik ikon panah ke kanan.",
     image: "/step-by-step-export-transport/export-pdf-transport-step-3.jpeg"
   },
   {
-    title: "Pilih Transport Statement",
-    description: "Pilih opsi 'Transport Statement' untuk mendapatkan riwayat perjalanan.",
+    title: "Klik Icon Download",
+    description: "Cari dan klik ikon download di kanan atas.",
     image: "/step-by-step-export-transport/export-pdf-transport-step-4.jpeg"
   },
   {
-    title: "Atur Rentang Tanggal",
-    description: "Pilih periode perjalanan yang ingin kamu reimburse (maksimal 31 hari).",
+    title: "Pilih Transport Statement",
+    description: "Pilih opsi 'Transport Statement' untuk mendapatkan riwayat perjalanan. Kemudian klik ekspor",
     image: "/step-by-step-export-transport/export-pdf-transport-step-5.jpeg"
   },
   {
-    title: "Kirim & Download PDF",
-    description: "Klik 'Send Statement'. Grab akan mengirimkan PDF ke email bisnismu.",
+    title: "Cek Email & Download PDF",
+    description: "Grab akan mengirimkan PDF ke email bisnismu. Kemudian download dan upload file PDF tersebut ke dalam sistem.",
     image: "/step-by-step-export-transport/export-pdf-transport-step-6.jpeg"
   }
 ];
@@ -59,7 +59,7 @@ export const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
             onClick={onClose}
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
-          
+
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -83,7 +83,7 @@ export const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
                   />
                 </motion.div>
               </AnimatePresence>
-              
+
               {/* Step Counter Overlay */}
               <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-md px-4 py-1 rounded-full text-[10px] font-bold text-white uppercase tracking-widest">
                 Step {currentStep + 1} of {steps.length}
@@ -104,7 +104,7 @@ export const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
                   <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6">
                     <span className="text-xl font-black">{currentStep + 1}</span>
                   </div>
-                  <motion.h3 
+                  <motion.h3
                     key={`title-${currentStep}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -112,7 +112,7 @@ export const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
                   >
                     {steps[currentStep].title}
                   </motion.h3>
-                  <motion.p 
+                  <motion.p
                     key={`desc-${currentStep}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
