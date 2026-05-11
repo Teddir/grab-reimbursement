@@ -51,6 +51,7 @@ import { Button } from "./components/ui/Button";
 import { Card } from "./components/ui/Card";
 import { Input } from "./components/ui/Input";
 import { TutorialModal } from "./components/ui/TutorialModal";
+import { OCRLoading } from "./components/ui/OCRLoading";
 
 const nomor = 125;
 const romawiBulan = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
@@ -188,10 +189,10 @@ export default function Home() {
   if (!session) return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <Card className="p-12 max-w-md w-full text-center shadow-2xl border-none">
-        <div className="w-20 h-20 bg-primary/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 text-primary">
-          <ShieldCheck size={40} />
+        <div className="w-24 h-24 bg-white rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-xl border border-border overflow-hidden p-4">
+          <img src="/asisgrab-logo.png" alt="AsisGrab Logo" className="w-full h-full object-contain rounded-full" />
         </div>
-        <h1 className="text-3xl font-black mb-4 tracking-tight">Grab Business</h1>
+        <h1 className="text-3xl font-black mb-4 tracking-tight">AsisGrab Business</h1>
         <p className="text-muted-foreground mb-10 leading-relaxed">Sign in to access your enterprise reimbursement dashboard.</p>
         <Button onClick={() => signIn("microsoft-entra-id")} className="w-full h-16 text-lg">
           Sign in with Microsoft
@@ -208,10 +209,10 @@ export default function Home() {
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border no-print">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
-              <ScanText size={24} className="text-white" />
+            <div className="relative w-10 h-10 overflow-hidden rounded-xl shadow-lg shadow-primary/20 bg-white">
+              <img src="/asisgrab-logo.png" alt="AsisGrab Logo" className="w-full h-full object-contain p-0.5 rounded-full" />
             </div>
-            <span className="text-lg sm:text-xl font-black tracking-tighter">Grab Business</span>
+            <span className="text-lg sm:text-xl font-black tracking-tighter">AsisGrab Business</span>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
@@ -546,7 +547,7 @@ export default function Home() {
             <p className="text-sm font-bold">{extraFields.value_no_dok}</p>
           </div>
           <div className="text-right">
-            <p className="text-sm font-bold uppercase">Grab Business</p>
+            <p className="text-sm font-bold uppercase">AsisGrab Business</p>
             <p className="text-xs">{extraFields.value_tgl_pengajuan}</p>
           </div>
         </div>
@@ -627,6 +628,7 @@ export default function Home() {
       </div>
 
       <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} />
+      <OCRLoading isVisible={isProcessing} />
     </div>
   );
 }

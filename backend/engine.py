@@ -161,7 +161,7 @@ class ExcelTemplateEngine:
                                 # Collect for new sheet instead of inserting here
                                 if val not in receipt_images:
                                     receipt_images.append(val)
-                                new_value = new_value.replace(key, "Lihat Lampiran") 
+                                new_value = new_value.replace(key, "Lihat Lampiran di sheet Lampiran Bukti") 
                             else:
                                 new_value = new_value.replace(key, str(val))
                     
@@ -201,7 +201,7 @@ class ExcelTemplateEngine:
                                 if match == 'value_image_receipt' and val:
                                     if val not in receipt_images:
                                         receipt_images.append(val)
-                                    new_value = new_value.replace(match, "Lihat Lampiran")
+                                    new_value = new_value.replace(match, "Lihat Lampiran di sheet Lampiran Bukti")
                                 else:
                                     new_value = new_value.replace(match, str(val))
                                 replaced = True
