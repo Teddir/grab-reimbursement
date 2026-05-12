@@ -13,8 +13,36 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Grab Reimbursement | Automated Template Engine",
-  description: "Extract Grab receipt data and generate Excel reimbursement forms instantly using your company's custom template.",
+  metadataBase: new URL(process.env.NEXTAUTH_URL || "https://reimburse.asiasistem.com"),
+  title: "AsisGrab Business | Enterprise Reimbursement Platform",
+  description: "The ultimate AI-powered solution for Grab reimbursement. Automated receipt extraction, Excel report generation, and enterprise-grade security for PT Asia Sistem Indonesia.",
+  keywords: ["Grab Reimbursement", "Automated Excel", "OCR Receipt", "Expense Management", "Asia Sistem Indonesia"],
+  authors: [{ name: "PT Asia Sistem Indonesia" }],
+  openGraph: {
+    title: "AsisGrab Business",
+    description: "Modernize your reimbursement workflow with AI-powered automation.",
+    url: process.env.NEXTAUTH_URL || "https://reimburse.asiasistem.com",
+    siteName: "AsisGrab Business",
+    images: [
+      {
+        url: "/asisgrab-logo.png",
+        width: 800,
+        height: 800,
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AsisGrab Business",
+    description: "Modernize your reimbursement workflow with AI-powered automation.",
+    images: ["/asisgrab-logo.png"],
+  },
+  icons: {
+    icon: "/asisgrab-logo.png",
+    apple: "/asisgrab-logo.png",
+  },
 };
 
 import { Providers } from "./providers";
