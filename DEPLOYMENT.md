@@ -137,14 +137,34 @@ Useful PM2 commands:
 - `pm2 save`: Save process list to restore on reboot.
 - `pm2 startup`: Generate startup script for Linux.
 
-### Updating the App
+## 🛡️ 6. Security & Monitoring
+
+### Health Check
+Monitor system status at: `https://api-reimburse.yourcompany.com/health`
+
+### Rate Limiting
+Protected by **SlowAPI**. 429 errors indicate request limits have been reached.
+
+### Logs
+Logs are saved in `backend/backend.log`. Use `pm2 logs` for real-time viewing.
+
+---
+
+## 💾 7. Backup & Updates
+
+### Automated Backup
+Run the backup script to secure DB, templates, and config:
 ```bash
-git pull
-npm install
-npm run build
-pm2 restart asisgrab-frontend
-pm2 restart asisgrab-backend
+./backup.sh
 ```
+*Recommended: Set as a daily cron job.*
+
+### Routine Updates
+To update the entire application:
+```bash
+./update.sh
+```
+*This handles git pull, builds, dependency updates, and service restarts.*
 
 ---
 

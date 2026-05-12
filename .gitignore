@@ -58,3 +58,9 @@ backend/.env
 !form_template.xlsx
 !receipt_transport_grab.pdf
 !Form Klaim Grab Corporate - PT Asia Sistem Indonesia - Formulir Klaim.pdf
+
+# database and logs
+backend/storage.db
+backend/backend.log
+backups/
+temp/

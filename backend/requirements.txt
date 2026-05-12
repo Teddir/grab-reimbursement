@@ -8,3 +8,6 @@ pillow
 python-dotenv
 aiofiles
 pymupdf
+slowapi
+gunicorn
+uvicorn[standard]

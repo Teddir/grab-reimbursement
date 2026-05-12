@@ -9,26 +9,85 @@ from typing import List, Optional
 import json
 import asyncio
 import time
+import logging
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from ocr import GrabReceiptOCR
 from engine import ExcelTemplateEngine
+
+# --- MONITORING & LOGGING SETUP ---
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler("backend.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# --- SECURITY: RATE LIMITING ---
+limiter = Limiter(key_func=get_remote_address)
 
 # Fix for macOS SSL certificate verification error
 ssl._create_default_https_context = ssl._create_unverified_context
 
+import sqlite3
+
+# --- DATABASE OPTIMIZATION: SQLITE STORAGE ---
+DB_PATH = "storage.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS receipt_images (
+            id TEXT PRIMARY KEY,
+            data BLOB,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+def save_image_to_db(image_id: str, data: bytes):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR REPLACE INTO receipt_images (id, data) VALUES (?, ?)", (image_id, data))
+    conn.commit()
+    conn.close()
+
+def get_image_from_db(image_id: str) -> Optional[bytes]:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT data FROM receipt_images WHERE id = ?", (image_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row else None
+
+def clear_old_db_records(days: int = 7):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM receipt_images WHERE created_at < datetime('now', '-' || ? || ' days')", (days,))
+    conn.commit()
+    conn.close()
+
 # --- BACKGROUND CLEANUP TASK ---
-async def cleanup_temp_files():
+async def cleanup_maintenance_loop():
     """
-    Scans the 'temp' directory every 24 hours and deletes folders older than 7 days.
+    Scans the 'temp' directory every 24 hours and deletes old files and DB records.
     """
     while True:
         try:
+            # 1. Temp Files Cleanup
             temp_root = "temp"
             if os.path.exists(temp_root):
-                print(f"DEBUG: Starting scheduled cleanup of {temp_root}...")
+                logger.info(f"Cleanup: Scanning {temp_root} for old files...")
                 now = time.time()
-                retention_period = 7 * 24 * 60 * 60  # 7 days in seconds
+                retention_period = 7 * 24 * 60 * 60  # 7 days
                 
                 for item in os.listdir(temp_root):
                     item_path = os.path.join(temp_root, item)
@@ -38,58 +97,70 @@ async def cleanup_temp_files():
                                 shutil.rmtree(item_path)
                             else:
                                 os.remove(item_path)
-                            print(f"DEBUG: Cleaned up old temp item: {item}")
+                            logger.info(f"Cleanup: Deleted old item {item}")
                         except Exception as e:
-                            print(f"DEBUG: Failed to delete {item}: {e}")
+                            logger.error(f"Cleanup Error: Failed to delete {item}: {e}")
             
-            # Clear in-memory storage too if it gets too large
-            if len(receipt_storage) > 1000:
-                print("DEBUG: Clearing old in-memory receipt storage...")
-                receipt_storage.clear()
+            # 2. Database Cleanup
+            logger.info("Cleanup: Purging old database records...")
+            clear_old_db_records(7)
                 
         except Exception as e:
-            print(f"DEBUG: Cleanup task error: {e}")
+            logger.error(f"Cleanup Task Failure: {e}")
             
         await asyncio.sleep(24 * 60 * 60)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # STARTUP: Start the cleanup task
-    cleanup_task = asyncio.create_task(cleanup_temp_files())
-    print("DEBUG: Background cleanup task started.")
+    # STARTUP
+    logger.info("Server: Initializing SQLite database...")
+    init_db()
+    logger.info("Server: Starting background maintenance task...")
+    maintenance_task = asyncio.create_task(cleanup_maintenance_loop())
     yield
-    # SHUTDOWN: Cancel the task if needed
-    cleanup_task.cancel()
-    print("DEBUG: Background cleanup task stopped.")
+    # SHUTDOWN
+    maintenance_task.cancel()
+    logger.info("Server: Application shutting down...")
 
 app = FastAPI(lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# --- MIDDLEWARE & ENGINES ---
+# --- SECURITY: CORS RESTRICTION ---
+# In production, replace "*" with your actual frontend domain
+FRONTEND_URL = os.getenv("FRONTEND_URL", "*")
 
-# Enable CORS for Next.js frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
+    allow_origins=[FRONTEND_URL],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
+# --- MONITORING: HEALTH CHECK ---
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "database": "sqlite3"
+    }
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    print(f"DEBUG: Incoming {request.method} request to {request.url}")
+    start_time = time.time()
     response = await call_next(request)
-    print(f"DEBUG: Response status: {response.status_code}")
+    process_time = time.time() - start_time
+    logger.info(f"API: {request.method} {request.url.path} - {response.status_code} ({process_time:.4f}s)")
     return response
+
 
 ocr_engine = GrabReceiptOCR()
 
-import base64
-
-# In-memory storage for receipt images to avoid large payloads in JSON
-receipt_storage = {}
-
 @app.post("/ocr")
+@limiter.limit("10/minute")
 async def extract_receipt_data(
+    request: Request,
     receipts: List[UploadFile] = File(...),
 ):
     """
@@ -120,7 +191,7 @@ async def extract_receipt_data(
             if img_bytes:
                 # Store it and replace with an ID
                 storage_key = f"{receipt_id}_{uuid.uuid4()}"
-                receipt_storage[storage_key] = img_bytes
+                save_image_to_db(storage_key, img_bytes)
                 normalized_data["image_storage_id"] = storage_key
                 # Remove the actual bytes to keep JSON small
                 if "image_bytes" in normalized_data:
@@ -130,9 +201,8 @@ async def extract_receipt_data(
     
     return {"data": extracted_data_list}
 
-from fastapi import Request
-
 @app.post("/generate")
+@limiter.limit("5/minute")
 async def generate_excel(request: Request):
     """
     Generates Excel from reviewed/edited JSON data.
@@ -142,7 +212,7 @@ async def generate_excel(request: Request):
     extra_data = form_data.get("extra_data")
     template = form_data.get("template")
     
-    print(f"DEBUG: Form keys received: {list(form_data.keys())}")
+    logger.info(f"API: Generating Excel report for session...")
     
     temp_dir = f"temp/{uuid.uuid4()}"
     os.makedirs(temp_dir, exist_ok=True)
@@ -157,12 +227,13 @@ async def generate_excel(request: Request):
         # Retrieve image bytes from storage using IDs
         for item in data_list:
             storage_id = item.get("image_storage_id")
-            if storage_id and storage_id in receipt_storage:
-                img_bytes = receipt_storage[storage_id]
-                item["image_bytes"] = img_bytes
-                item["value_image_receipt"] = img_bytes
+            if storage_id:
+                img_bytes = get_image_from_db(storage_id)
+                if img_bytes:
+                    item["image_bytes"] = img_bytes
+                    item["value_image_receipt"] = img_bytes
     except Exception as e:
-        print(f"DEBUG: JSON parse error: {e}")
+        logger.error(f"API: JSON parse error in /generate: {e}")
         return {"error": f"Invalid JSON data: {str(e)}"}
 
     # Add back custom fields and index
