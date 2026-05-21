@@ -33,12 +33,12 @@ class GrabReceiptOCR:
         doc.close()
         return img_data
 
-    def extract_data(self, file_bytes, filename=""):
+    def extract_data(self, file_bytes, filename="", use_llama=True):
         full_text = ""
         used_llama = False
         
-        # 1. Try LlamaIndex (LlamaParse) First
-        if self.llama_parser:
+        # 1. Try LlamaIndex (LlamaParse) First if permitted
+        if self.llama_parser and use_llama:
             try:
                 print("Attempting to parse with LlamaIndex (LlamaParse)...")
                 ext = ".pdf" if filename.lower().endswith(".pdf") else ".jpg"

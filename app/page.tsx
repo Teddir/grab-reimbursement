@@ -142,6 +142,11 @@ export default function Home() {
     setError(null);
     const formData = new FormData();
     receipts.forEach((r) => formData.append("receipts", r));
+    
+    // Add user email for backend quota tracking
+    if (session?.user?.email) {
+      formData.append("user_email", session.user.email);
+    }
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/ocr`, { method: "POST", body: formData });
       if (!res.ok) throw new Error("OCR failed.");

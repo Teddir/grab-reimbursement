@@ -56,8 +56,44 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_quotas (
+            email TEXT,
+            date TEXT,
+            llama_count INTEGER DEFAULT 0,
+            PRIMARY KEY (email, date)
+        )
+    """)
     conn.commit()
     conn.close()
+
+def check_and_increment_quota(email: str, limit: int = 3) -> bool:
+    if not email or email == "anonymous":
+        return False # No free LlamaParse for anonymous/unknown users
+        
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    today = datetime.now().strftime("%Y-%m-%d")
+    
+    # Get current count
+    cursor.execute("SELECT llama_count FROM user_quotas WHERE email = ? AND date = ?", (email, today))
+    row = cursor.fetchone()
+    
+    if row is None:
+        cursor.execute("INSERT INTO user_quotas (email, date, llama_count) VALUES (?, ?, 1)", (email, today))
+        conn.commit()
+        conn.close()
+        return True
+    
+    count = row[0]
+    if count >= limit:
+        conn.close()
+        return False
+        
+    cursor.execute("UPDATE user_quotas SET llama_count = llama_count + 1 WHERE email = ? AND date = ?", (email, today))
+    conn.commit()
+    conn.close()
+    return True
 
 def save_image_to_db(image_id: str, data: bytes):
     conn = sqlite3.connect(DB_PATH)
@@ -78,6 +114,7 @@ def clear_old_db_records(days: int = 7):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM receipt_images WHERE created_at < datetime('now', '-' || ? || ' days')", (days,))
+    cursor.execute("DELETE FROM user_quotas WHERE date < date('now', '-' || ? || ' days')", (days,))
     conn.commit()
     conn.close()
 
@@ -168,14 +205,23 @@ ocr_engine = GrabReceiptOCR()
 async def extract_receipt_data(
     request: Request,
     receipts: List[UploadFile] = File(...),
+    user_email: str = Form(None),
 ):
     """
     Extracts data from receipts and returns JSON for frontend review.
     """
+    
+    # Check LlamaParse daily quota
+    can_use_llama = check_and_increment_quota(user_email, limit=3)
+    if not can_use_llama:
+        logger.warning(f"LlamaParse quota exceeded or no email provided for: {user_email}. Falling back to free OCR engines.")
+    else:
+        logger.info(f"LlamaParse quota OK for: {user_email}.")
+        
     extracted_data_list = []
     for receipt in receipts:
         contents = await receipt.read()
-        rides_data = ocr_engine.extract_data(contents, filename=receipt.filename)
+        rides_data = ocr_engine.extract_data(contents, filename=receipt.filename, use_llama=can_use_llama)
         
         # Store the original image/PDF for this receipt session
         receipt_id = str(uuid.uuid4())
