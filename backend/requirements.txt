@@ -11,3 +11,6 @@ pymupdf
 slowapi
 gunicorn
 uvicorn[standard]
+llama-index-core
+llama-parse
+pdfplumber

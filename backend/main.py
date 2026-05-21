@@ -2,6 +2,12 @@ from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from backend/.env and root/.env.local
+load_dotenv()  # backend/.env
+load_dotenv("../.env.local")  # root/.env.local (Next.js default)
+
 import uuid
 import shutil
 import ssl
