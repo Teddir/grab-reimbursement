@@ -33,7 +33,8 @@ import {
   Building2,
   Calendar,
   Briefcase,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  MessageCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
@@ -339,7 +340,18 @@ export default function Home() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                  <Input label="Document No" name="value_no_dok" value={extraFields.value_no_dok} onChange={handleExtraFieldChange} icon={FileText} />
+                  <div className="flex flex-col gap-1.5">
+                    <Input label="Document No" name="value_no_dok" value={extraFields.value_no_dok} onChange={handleExtraFieldChange} icon={FileText} />
+                    <a 
+                      href="https://wa.me/628119104177?text=Halo%20HR,%20saya%20ingin%20meminta%20Nomor%20Dokumen%20untuk%20form%20Grab%20Reimbursement." 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-[11px] text-green-600 hover:text-green-700 font-semibold flex items-center gap-1.5 ml-1 transition-colors w-fit"
+                    >
+                      <MessageCircle size={14} />
+                      Chat HR untuk dapatkan Document No
+                    </a>
+                  </div>
                   <Input label="Date" name="value_tgl_pengajuan" type="date" value={extraFields.value_tgl_pengajuan} onChange={handleExtraFieldChange} icon={Calendar} />
                   <Input label="Employee" name="value_nama_karyawan" value={extraFields.value_nama_karyawan} onChange={handleExtraFieldChange} icon={User} />
                   <Input label="Applicant" name="value_pemohon" value={extraFields.value_pemohon} onChange={handleExtraFieldChange} icon={User} />
