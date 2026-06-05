@@ -10,12 +10,43 @@ import { useState } from "react";
 
 export default function LoginPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showEmailLogin, setShowEmailLogin] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const handleSignIn = async () => {
+  const handleMicrosoftSignIn = async () => {
     setIsLoggingIn(true);
+    setErrorMsg("");
     try {
       await signIn("microsoft-entra-id", { callbackUrl: "/" });
     } catch (error) {
+      setIsLoggingIn(false);
+      setErrorMsg("Microsoft login failed.");
+    }
+  };
+
+  const handleCredentialsSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    setErrorMsg("");
+    
+    try {
+      const res = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+        callbackUrl: "/"
+      });
+      
+      if (res?.error) {
+        setErrorMsg("Invalid email or password.");
+        setIsLoggingIn(false);
+      } else if (res?.url) {
+        window.location.href = res.url;
+      }
+    } catch (error) {
+      setErrorMsg("An error occurred during login.");
       setIsLoggingIn(false);
     }
   };
@@ -58,14 +89,14 @@ export default function LoginPage() {
           >
             {[
               { icon: Zap, text: "AI-Powered Receipt Extraction" },
-              { icon: CheckCircle2, text: "Automated Excel Report Generation" },
-              { icon: Globe, text: "Centralized Enterprise Dashboard" }
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-4 group">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-white/10 rounded-xl flex items-center justify-center group-hover:bg-white group-hover:text-primary transition-all duration-300 shrink-0">
-                  <item.icon size={18} className="sm:w-5 sm:h-5" />
+              { icon: Globe, text: "Seamless Microsoft Entra ID Sync" },
+              { icon: CheckCircle2, text: "One-Click Auto Excel Reports" },
+            ].map((feature, i) => (
+              <div key={i} className="flex items-center gap-4 text-white/90">
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm shrink-0">
+                  <feature.icon size={20} className="text-white" />
                 </div>
-                <p className="text-sm sm:text-base font-bold text-white/90">{item.text}</p>
+                <span className="font-semibold text-sm sm:text-base">{feature.text}</span>
               </div>
             ))}
           </motion.div>
@@ -86,33 +117,109 @@ export default function LoginPage() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.1 }}
           className="w-full max-w-md relative"
         >
           <Card className="p-6 sm:p-10 md:p-12 shadow-2xl border-none bg-card/80 backdrop-blur-xl">
             <div className="text-center mb-8 sm:mb-10">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-primary/10 rounded-[1.5rem] sm:rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 text-primary">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-primary/10 rounded-3xl sm:rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 text-primary">
                 <ShieldCheck size={32} className="sm:w-10 sm:h-10" />
               </div>
               <h2 className="text-2xl sm:text-3xl font-black mb-3 tracking-tight">Welcome Back</h2>
-              <p className="text-muted-foreground text-xs sm:text-sm">Please sign in with your Microsoft account to access the dashboard.</p>
+              <p className="text-muted-foreground text-xs sm:text-sm">
+                {showEmailLogin 
+                  ? "Sign in with your email address." 
+                  : "Please sign in with your Microsoft account to access the dashboard."}
+              </p>
             </div>
 
-            <div className="space-y-4">
-              <Button
-                onClick={handleSignIn}
-                isLoading={isLoggingIn}
-                disabled={isLoggingIn}
-                className="w-full h-14 sm:h-16 text-base sm:text-lg rounded-xl sm:rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                Sign in with Microsoft
-                {!isLoggingIn && <ArrowRight size={18} className="sm:w-5 sm:h-5" />}
-              </Button>
+            <div className="space-y-4 sm:space-y-6">
+              {errorMsg && (
+                <div className="p-3 text-xs text-red-600 bg-red-100 rounded-lg text-center font-semibold">
+                  {errorMsg}
+                </div>
+              )}
+              
+              {!showEmailLogin ? (
+                <>
+                  {/* PRIMARY: Microsoft Login */}
+                  <Button
+                    type="button"
+                    onClick={handleMicrosoftSignIn}
+                    isLoading={isLoggingIn}
+                    disabled={isLoggingIn}
+                    className="w-full h-14 sm:h-16 text-base sm:text-lg rounded-xl sm:rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                  >
+                    Sign in with Microsoft
+                    {!isLoggingIn && <ArrowRight size={18} className="sm:w-5 sm:h-5 ml-2" />}
+                  </Button>
+
+                  <div className="text-center pt-4">
+                    <p className="text-xs text-muted-foreground">
+                      Don't have a Microsoft account?{" "}
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setShowEmailLogin(true);
+                          setErrorMsg("");
+                        }}
+                        className="text-primary font-bold hover:underline"
+                      >
+                        Sign in with Email
+                      </button>
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* SECONDARY: Email Form */}
+                  <form onSubmit={handleCredentialsSignIn} className="space-y-4">
+                    <div className="space-y-3">
+                      <input 
+                        type="email" 
+                        placeholder="Email Address" 
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full h-12 px-4 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm"
+                        required
+                      />
+                      <input 
+                        type="password" 
+                        placeholder="Password" 
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full h-12 px-4 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm"
+                        required
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={isLoggingIn}
+                      className="w-full h-12 sm:h-14 text-sm sm:text-base rounded-xl sm:rounded-2xl shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
+                    >
+                      Sign In with Email
+                    </Button>
+                  </form>
+                  
+                  <div className="text-center pt-2">
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setShowEmailLogin(false);
+                        setErrorMsg("");
+                      }}
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
+                    >
+                      ← Back to Microsoft Login
+                    </button>
+                  </div>
+                </>
+              )}
 
               <div className="relative py-4 flex items-center">
-                <div className="flex-grow border-t border-border"></div>
-                <span className="flex-shrink mx-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">Enterprise Only</span>
-                <div className="flex-grow border-t border-border"></div>
+                <div className="grow border-t border-border"></div>
+                <span className="shrink mx-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">Enterprise Only</span>
+                <div className="grow border-t border-border"></div>
               </div>
 
               <p className="text-[10px] text-center text-muted-foreground leading-relaxed">
