@@ -217,7 +217,7 @@ class GrabReceiptOCR:
                                 time_match = re.search(r'(\d{1,2}[:\.]\d{2}(?:[:\.]\d{2})?\s*(?:AM|PM|am|pm)?)', cols[idx_date])
                                 if time_match and last_ride["value_waktu_berangkat"] == "N/A":
                                     last_ride["value_waktu_berangkat"] = time_match.group(1).strip()
-                                    last_ride["value_waktu_tiba"] = time_match.group(1).strip()
+                                    last_ride["value_waktu_tiba"] = "-"
 
                             if idx_pickup != -1 and len(cols) > idx_pickup and cols[idx_pickup]:
                                 if last_ride["value_pickup"] == "-": last_ride["value_pickup"] = ""
@@ -292,7 +292,7 @@ class GrabReceiptOCR:
                 "value_total_fare": amount,
                 "value_total_biaya": amount,
                 "value_waktu_berangkat": final_time.strip(),
-                "value_waktu_tiba": final_time.strip(),
+                "value_waktu_tiba": "-",
                 "value_pickup": pickup,
                 "value_dropoff": dropoff,
                 "value_tujuan_perjalan": "-",

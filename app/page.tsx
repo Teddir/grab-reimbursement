@@ -460,7 +460,7 @@ export default function Home() {
                   <table className="w-full text-left border-collapse min-w-[800px]">
                     <thead className="bg-muted/50 border-b border-border">
                       <tr>
-                        {["No", "Order ID", "Date", "Pickup", "Drop-Off", "Amount", "Time", "Purpose"].map((h) => (
+                        {["No", "Order ID", "Date", "Pickup", "Drop-Off", "Amount", "Dep. Time", "Arr. Time", "Purpose"].map((h) => (
                           <th key={h} className="px-4 sm:px-6 py-4 text-[10px] sm:text-[11px] font-black text-muted-foreground uppercase tracking-widest">{h}</th>
                         ))}
                       </tr>
@@ -511,6 +511,14 @@ export default function Home() {
                             <input
                               value={row.value_waktu_berangkat || ""}
                               onChange={(e) => handleUpdatePreviewItem(i, "value_waktu_berangkat", e.target.value)}
+                              className="bg-transparent border-none p-0 text-[10px] sm:text-[11px] w-12 sm:w-16 focus:ring-0"
+                            />
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 sm:py-5">
+                            <input
+                              placeholder="-"
+                              value={row.value_waktu_tiba || ""}
+                              onChange={(e) => handleUpdatePreviewItem(i, "value_waktu_tiba", e.target.value)}
                               className="bg-transparent border-none p-0 text-[10px] sm:text-[11px] w-12 sm:w-16 focus:ring-0"
                             />
                           </td>
