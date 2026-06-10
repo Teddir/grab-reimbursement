@@ -15,9 +15,9 @@ module.exports = {
     },
     {
       name: "asisgrab-backend",
-      script: "main.py", // The actual python file
-      interpreter: path.join(__dirname, "backend", "venv", "bin", "python"), // Absolute path to venv
-      cwd: "./backend", // Backend directory
+      script: "main.py", 
+      interpreter: "python3", // Simplified per user request
+      cwd: "./backend",
       env: {
         PYTHONUNBUFFERED: "1", // Forces python to flush output to PM2 logs immediately
       },
